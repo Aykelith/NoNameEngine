@@ -13,12 +13,14 @@ namespace NNE {
         ShaderProgram();
 
         bool loadShader(const char* data, GLenum type);
+        bool loadShaderFromFile(const std::string& file, GLenum type);
 
         bool link();
         void use() const;
         static void stop();
 
         bool storeUniform(uint key, const GLchar* name);
+        GLint getUniformLocation(const GLchar* name);
 
     private:
         using UniformKeeper::addUniform;

@@ -5,6 +5,11 @@ namespace NNE {
     }
 
     template <GLenum target>
+    Texture<target>::~Texture() {
+        glDeleteTextures(1, &m_id);
+    }
+
+    template <GLenum target>
     void Texture<target>::bind() {
         glBindTexture(target, m_id);
     }

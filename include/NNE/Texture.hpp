@@ -2,13 +2,16 @@
 #define NNE_TEXTURE_HPP
 
 #include <NNE/Global.hpp>
-#include <NNE/GL.hpp>
+
+#include <NNE/Global.hpp>
+#include <GL.hpp>
 
 namespace NNE {
     template <GLenum target>
-    class Texture {
+    class NNE_API Texture {
     public:
         Texture();
+        ~Texture();
 
         void bind();
         static void unbind();
@@ -34,7 +37,7 @@ namespace NNE {
         GLuint m_id;
     };
 
-    typedef Texture<GL_TEXTURE_2D> 2DTexture;
+    typedef Texture<GL_TEXTURE_2D> Texture2D;
 }
 
 #include <NNE/Texture.inl>

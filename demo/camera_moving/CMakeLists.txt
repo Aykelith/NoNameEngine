@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project ("RectangleUniforms")
+project ("CameraMoving")
 
 # REQUIRED LIBRARIES
 ################################################################################
@@ -41,11 +41,11 @@ endif()
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
 add_executable(
-        "RectangleUniforms"
+        "CameraMoving"
         "main.cpp"
 )
 
-target_link_libraries(RectangleUniforms
+target_link_libraries(CameraMoving
 	${SFML_LIBRARIES}
 	"${PROJECT_SOURCE_DIR}/../../builds/mingw63/lib/libNNE.a"
 	${GLEW_LIBRARIES}

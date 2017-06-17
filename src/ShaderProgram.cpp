@@ -2,6 +2,10 @@
 
 #include <iostream>
 
+#include <fstream>
+#include <iterator>
+#include <string>
+
 namespace NNE {
     ShaderProgram::ShaderProgram() {
         m_program = glCreateProgram();
@@ -21,7 +25,9 @@ namespace NNE {
 #ifdef NNE_ERROR_MESSAGES
             GLchar infoLog[INFOLOG_SIZE];
             glGetShaderInfoLog(id, INFOLOG_SIZE, NULL, infoLog);
-            std::cout << infoLog << "\n";
+
+            std::string shaderType = (type == GL_VERTEX_SHADER) ? "VertexShader" : "FragmentShader";
+            std::cout << shaderType << " | " << infoLog << "\n";
 #endif
             glDeleteShader(id);
             return false;
@@ -29,6 +35,18 @@ namespace NNE {
 
         m_shaders.push_back(id);
         return true;
+    }
+
+    bool ShaderProgram::loadShaderFromFile(const std::string& file, GLenum type) {
+        std::ifstream in(file);
+        std::string contents((std::istreambuf_iterator<char>(in)),
+                              std::istreambuf_iterator<char>());
+
+#ifdef NNE_DEBUG
+        std::cout << type << "\n" << "========================\n" << contents << "\n========================\n";
+#endif
+
+        return loadShader(contents.c_str(), type);
     }
 
     bool ShaderProgram::link() {
@@ -68,10 +86,18 @@ namespace NNE {
     }
 
     bool ShaderProgram::storeUniform(uint key, const GLchar* name) {
-        auto id = glGetUniformLocation(m_program, name);
+        auto id = getUniformLocation(name);
+
+#ifdef NNE_DEBUG
+        std::cout << "Storing uniform \"" << name << "\" => " << (id != -1) << "\n";
+#endif
         if (id == -1) return false;
 
         UniformKeeper::addUniform(key, id);
         return true;
+    }
+
+    GLint ShaderProgram::getUniformLocation(const GLchar* name) {
+        return glGetUniformLocation(m_program, name);
     }
 }

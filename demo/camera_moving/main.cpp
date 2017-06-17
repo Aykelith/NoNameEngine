@@ -2,30 +2,15 @@
 #include <NNE/VAO.hpp>
 #include <NNE/BO.hpp>
 #include <NNE/ShaderProgram.hpp>
-#include <NNE/Camera.hpp>
+#include <NNE/Camera/PerspectiveCamera.hpp>
+#include <NNE/Texture.hpp>
 
 #include <SFML/Graphics.hpp>
 #include <SFML/System/Clock.hpp>
+#include <SFML/Window/Keyboard.hpp>
 
 #include <iostream>
 #include <cmath>
-
-const GLchar* vertexShaderSource = "#version 330 core\n"
-    "layout (location = 0) in vec3 position;\n"
-    "layout (location = 1) in vec3 color;\n"
-    "out vec3 ourColor;\n"
-    "void main()\n"
-    "{\n"
-    "gl_Position = vec4(position, 1.0);\n"
-    "ourColor = color;\n"
-    "}\0";
-const GLchar* fragmentShaderSource = "#version 330 core\n"
-    "out vec4 color;\n"
-    "uniform vec4 ourColor;\n"
-    "void main()\n"
-    "{\n"
-    "color = ourColor;\n"
-    "}\n\0";
 
 int main() {
     sf::ContextSettings settings;
@@ -39,43 +24,119 @@ int main() {
 
     std::cout << window.getSettings().majorVersion << "." << window.getSettings().minorVersion << "\n";
 
+    glEnable(GL_DEPTH_TEST);
+
     window.setActive(true);
 
     NNE::Engine::initialize();
 
     NNE::ShaderProgram shaderProgram;
-    shaderProgram.loadShader(vertexShaderSource, GL_VERTEX_SHADER);
-    shaderProgram.loadShader(fragmentShaderSource, GL_FRAGMENT_SHADER);
+    shaderProgram.loadShaderFromFile("../data/shader.vert", GL_VERTEX_SHADER);
+    shaderProgram.loadShaderFromFile("../data/shader.frag", GL_FRAGMENT_SHADER);
     shaderProgram.link();
 
-    GLfloat vertices[] = {
-         0.5f,  0.5f, 0.0f,  // Top Right
-         0.5f, -0.5f, 0.0f,  // Bottom Right
-        -0.5f, -0.5f, 0.0f,  // Bottom Left
-        -0.5f,  0.5f, 0.0f   // Top Left
+    float vertices[] = {
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
     };
-    GLuint indices[] = {  // Note that we start from 0!
-        0, 1, 3,  // First Triangle
-        1, 2, 3   // Second Triangle
+    // world space positions of our cubes
+    glm::vec3 cubePositions[] = {
+        glm::vec3( 0.0f,  0.0f,  0.0f),
+        glm::vec3( 2.0f,  5.0f, -15.0f),
+        glm::vec3(-1.5f, -2.2f, -2.5f),
+        glm::vec3(-3.8f, -2.0f, -12.3f),
+        glm::vec3 (2.4f, -0.4f, -3.5f),
+        glm::vec3(-1.7f,  3.0f, -7.5f),
+        glm::vec3( 1.3f, -2.0f, -2.5f),
+        glm::vec3( 1.5f,  2.0f, -2.5f),
+        glm::vec3( 1.5f,  0.2f, -1.5f),
+        glm::vec3(-1.3f,  1.0f, -1.5f)
     };
 
-    NNE::VAO<1> vao;
-    NNE::BO<1> vbo, ebo;
+    NNE::VAO vao;
+    NNE::BO vbo;
 
     vao.bind();
     vbo.bind(GL_ARRAY_BUFFER);
     vbo.loadData(sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    ebo.bind(GL_ELEMENT_ARRAY_BUFFER);
-    ebo.loadData(sizeof(indices), indices, GL_STATIC_DRAW);
 
-    vao.configure({ {3, GL_FLOAT, GL_FALSE, (GLvoid*)0} }, 3 * sizeof(GLfloat));
+    vao.configure({
+            {3, GL_FLOAT, GL_FALSE, (GLvoid*)0},
+            {2, GL_FLOAT, GL_FALSE, (GLvoid*)(3 * sizeof(GLfloat))}
+        },
+        5 * sizeof(GLfloat)
+    );
 
     vbo.unbind();
     vao.unbind();
-    ebo.unbind();
 
-    shaderProgram.storeUniform(0, "ourColor");
+    NNE::Texture2D texture;
+    NNE::Texture2D::activateTexture(0);
+    texture.bind();
+    texture.setTextureWrapping(GL_REPEAT, GL_REPEAT);
+    texture.setTextureFiltering(GL_LINEAR, GL_LINEAR);
+
+    sf::Image img;
+    if (!img.loadFromFile("../data/container.jpg")) {
+        std::cout << "Can't load the image\n";
+        return 1;
+    } else {
+        texture.loadImage(0, GL_RGBA, img.getSize().x, img.getSize().y, 0, GL_RGBA, GL_UNSIGNED_BYTE, img.getPixelsPtr());
+        texture.generateMipmap();
+    }
+
+    shaderProgram.storeUniform(1, "combined");
+    shaderProgram.storeUniform(2, "model");
+
+    shaderProgram.use();
+    shaderProgram.setInt(shaderProgram.getUniformLocation("texture1"), 0);
+
+    NNE::PerspectiveCamera camera(800, 600, 45.f, 0.1f, 100.f);
+    camera.setPosition({0.f, 0.f, 10.f});
+    camera.setDirection({0.f, 0.f, -1.f});
+    camera.setUp({0.f, 1.f, 0.f});
+
+    auto oldMousePos = sf::Mouse::getPosition(window);
 
     sf::Clock clock;
     while (window.isOpen())
@@ -88,17 +149,73 @@ int main() {
             }
         }
 
-        GLfloat greenValue = (sin(clock.restart().asMilliseconds()) / 2.f) + 0.5f;
-        shaderProgram.setVec4(0, { 0.f, greenValue, 0.f, 0.f });
+        float dt = clock.restart().asSeconds();
+
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
+            camera.setPosition(camera.getPosition() + (camera.getDirection() * (100.f * dt)));
+        } else if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
+            camera.setPosition(camera.getPosition() - (camera.getDirection() * (100.f * dt)));
+        }
+
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
+            camera.setPosition(camera.getPosition() - (camera.getRight() * (100.f * dt)));
+        } else if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
+            camera.setPosition(camera.getPosition() + (camera.getRight() * (100.f * dt)));
+        }
+
+        if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
+            auto mousePos = sf::Mouse::getPosition(window);
+
+            auto mouseDt = mousePos - oldMousePos;
+            std::cout << mouseDt.x << " " << mouseDt.y << "\n";
+
+            float newYaw = camera.getYaw() - mouseDt.x * 0.2f;
+
+            if (newYaw > 360.0f) {
+                newYaw -= 360.0f;
+            } else if (newYaw < -360.0f) {
+                newYaw += 360.0f;
+            }
+
+            camera.setYaw(newYaw);
+
+            float newPitch = camera.getPitch() + mouseDt.y * 0.2f;
+
+            if (newPitch > 89.f) newPitch = 89.f;
+            else if (newPitch < -89.f) newPitch = -89.f;
+
+            camera.setPitch(newPitch);
+
+            std::cout << camera.getYaw() << "\n";
+        }
+
+        oldMousePos = sf::Mouse::getPosition(window);
+
+        shaderProgram.use();
+
+        if (camera.update()) {
+            shaderProgram.setMat4(1, camera.getCombined());
+        }
 
         // Clear the screen
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        shaderProgram.use();
-        vao.bind();
+        NNE::Texture2D::activateTexture(0);
+        texture.bind();
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        vao.bind();
+        for (unsigned int i = 0; i < 10; i++)
+        {
+            // calculate the model matrix for each object and pass it to shader before drawing
+            glm::mat4 model;
+            model = glm::translate(model, cubePositions[i]);
+            float angle = 20.0f * i;
+            model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+            shaderProgram.setMat4(2, model);
+
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
         vao.unbind();
 
         // Swap buffers
